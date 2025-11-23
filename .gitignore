@@ -1,0 +1,19 @@
+# Node
+node_modules/
+.npm/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# Uploads (runtime data)
+uploads/
+public/uploads/
+
+# macOS
+.DS_Store
+
+# Slidev build cache (if any)
+.slidev/

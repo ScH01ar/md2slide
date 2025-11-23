@@ -1,0 +1,21 @@
+{
+  "name": "md2slide",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "flask": "python app.py",
+    "slidev": "slidev --open false"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@slidev/cli": "^52.9.1",
+    "@slidev/theme-default": "^0.25.0"
+  },
+  "dependencies": {
+    "@google/genai": "^1.30.0"
+  }
+}

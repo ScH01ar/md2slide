@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>md2slide · 上传并转换</title>
+  <style>
+    :root { color-scheme: light dark; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+      background: radial-gradient(1200px 600px at 20% 0%, #e8edf7, #f6f7fb 60%),
+                  radial-gradient(800px 400px at 100% 0%, #f0f4ff, #ffffff 60%);
+      color: #1d1d1f;
+    }
+    .container { max-width: 860px; margin: 0 auto; padding: 40px 24px; }
+    header { display: flex; align-items: center; justify-content: space-between; }
+    .brand { font-weight: 700; letter-spacing: -0.02em; font-size: 24px; }
+    .card {
+      margin-top: 24px; padding: 24px; border-radius: 16px;
+      backdrop-filter: saturate(180%) blur(12px);
+      background: rgba(255, 255, 255, 0.65);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+    }
+    .title { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
+    .hero-title { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 8px; }
+    .hero-sub { color: #6e6e73; margin: 0 0 10px; }
+    .subtitle { margin: 0 0 24px; color: #6e6e73; }
+    .upload { border: 2px dashed #d2d2d7; border-radius: 14px; padding: 14px; text-align: center; transition: border-color .2s ease; max-width: 420px; margin: 0 auto; }
+    .upload.drag { border-color: #007aff; }
+    .file-info { margin-top: 8px; color: #1d1d1f; }
+    .actions { margin-top: 20px; display: flex; gap: 12px; align-items: center; }
+    button.primary { background: #007aff; color: #fff; border: none; border-radius: 12px; padding: 10px 16px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 20px rgba(0,122,255,0.25); }
+    button.secondary { background: #f5f5f7; color: #1d1d1f; border: none; border-radius: 12px; padding: 10px 16px; cursor: pointer; }
+    .preview-card { display: none; margin-top: 16px; padding: 14px 16px; border-radius: 14px; background: #f5f5f7; color: #1d1d1f; max-width: 520px; }
+    .pill-link { display: inline-block; background: #fff; border-radius: 999px; padding: 8px 12px; color: #007aff; text-decoration: none; font-weight: 600; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+    .status { margin-top: 12px; color: #6e6e73; }
+    .footer { margin-top: 32px; color: #86868b; font-size: 13px; }
+    a.link { color: #007aff; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">md2slide</div>
+      <nav><a class="link" href="/slidev" target="_blank">查看 Slidev 预览</a></nav>
+    </header>
+
+    <section class="card" style="margin-top:20px">
+      <h1 class="hero-title">✨ md2slide</h1>
+      <p class="hero-sub">使用 Gemini 大模型 + Slidev，将 Markdown 一键转换为美观、可演示的幻灯片。</p>
+      <p class="hero-sub">支持上传 .md 或包含图片资源的 .zip，自动处理图片路径与预览。</p>
+    </section>
+
+    <section class="card">
+      <h1 class="title">📄 上传 Markdown 或压缩包</h1>
+      <p class="subtitle">支持 .md 或 .zip。如果带图片，建议上传 zip（包含 md 与图片资源），我们会自动处理引用并放到公共资源目录。</p>
+
+      <div id="drop" class="upload">
+        <p>拖拽文件到此，或选择文件</p>
+        <input id="file" type="file" accept=".md,.zip" />
+        <div id="fileinfo" class="file-info"></div>
+      </div>
+
+      <div class="actions">
+        <button id="btnUpload" class="primary">上传</button>
+        <button id="btnConvert" class="secondary" disabled>转换为 Slidev</button>
+      </div>
+      <div id="previewCard" class="preview-card">
+        <div>✅ 转换完成，点击预览：<a id="btnPreview" class="pill-link" href="/slidev" target="_blank">🚀 打开 Slidev</a></div>
+      </div>
+      <div id="status" class="status"></div>
+    </section>
+
+    <div class="footer">提示：转换成功后点击右上角或下方链接跳转到 Slidev 预览。</div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('file')
+    const drop = document.getElementById('drop')
+    const fileinfo = document.getElementById('fileinfo')
+    const statusEl = document.getElementById('status')
+    const btnUpload = document.getElementById('btnUpload')
+    const btnConvert = document.getElementById('btnConvert')
+    const btnPreview = document.getElementById('btnPreview')
+
+    let uploaded = null
+
+    fileInput.addEventListener('change', () => {
+      const f = fileInput.files[0]
+      fileinfo.textContent = f ? `选中文件：${f.name}` : ''
+    })
+    ;['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag') }))
+    ;['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('drag') }))
+    drop.addEventListener('drop', e => { const dt = e.dataTransfer; if (dt && dt.files && dt.files[0]) { fileInput.files = dt.files; fileinfo.textContent = `选中文件：${dt.files[0].name}` } })
+
+    btnUpload.addEventListener('click', async () => {
+      const f = fileInput.files[0]
+      if (!f) { statusEl.textContent = '请先选择文件'; return }
+      statusEl.textContent = '上传中…'
+      const fd = new FormData()
+      fd.append('file', f)
+      const res = await fetch('/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.ok) {
+        uploaded = data
+        statusEl.textContent = '上传成功，可点击转换'
+        btnConvert.disabled = false
+      } else {
+        statusEl.textContent = '上传失败：' + (data.error || '未知错误')
+      }
+    })
+
+    btnConvert.addEventListener('click', async () => {
+      if (!uploaded || !uploaded.md_path) { statusEl.textContent = '请先上传文件'; return }
+      statusEl.textContent = '转换中…'
+      const fd = new FormData()
+      fd.append('md_path', uploaded.md_path)
+      const res = await fetch('/api/convert', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.ok) {
+        statusEl.textContent = '转换成功'
+        document.getElementById('previewCard').style.display = 'block'
+      } else {
+        statusEl.textContent = '转换失败：' + (data.error || '未知错误')
+      }
+    })
+  </script>
+</body>
+</html>
