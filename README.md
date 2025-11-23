@@ -2,6 +2,10 @@
 
 一个使用 Gemini 大模型与 Slidev 的 Markdown → 幻灯片转换网站。支持上传 `.md` 或包含图片资源的 `.zip`，自动处理图片路径并生成可预览的 `slides.md`。
 
+
+https://github.com/user-attachments/assets/17d9123f-19cc-4543-9c5b-e5180706d751
+
+
 ## 特性
 - 上传 `.md` 或 `.zip`（含图片资源）
 - 自动重写相对图片路径为可访问的公共资源地址（支持中文与特殊字符）
