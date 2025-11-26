@@ -1,131 +1,471 @@
 <!doctype html>
 <html lang="zh-CN">
+
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>md2slide · 上传并转换</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>md2slide</title>
   <style>
-    :root { color-scheme: light dark; }
-    html, body { height: 100%; }
+    :root {
+      --bg-color: #fbfbfd;
+      --text-primary: #1d1d1f;
+      --text-secondary: #86868b;
+      --accent-color: #0066cc;
+      --card-bg: rgba(255, 255, 255, 0.72);
+      --card-border: rgba(0, 0, 0, 0.04);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 12px 24px rgba(0, 0, 0, 0.06);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #000000;
+        --text-primary: #f5f5f7;
+        --text-secondary: #86868b;
+        --accent-color: #2997ff;
+        --card-bg: rgba(28, 28, 30, 0.72);
+        --card-border: rgba(255, 255, 255, 0.1);
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+        --shadow-md: 0 12px 24px rgba(0, 0, 0, 0.4);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-      background: radial-gradient(1200px 600px at 20% 0%, #e8edf7, #f6f7fb 60%),
-                  radial-gradient(800px 400px at 100% 0%, #f0f4ff, #ffffff 60%);
-      color: #1d1d1f;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.47059;
+      letter-spacing: -0.022em;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
     }
-    .container { max-width: 860px; margin: 0 auto; padding: 40px 24px; }
-    header { display: flex; align-items: center; justify-content: space-between; }
-    .brand { font-weight: 700; letter-spacing: -0.02em; font-size: 24px; }
+
+    /* Background Mesh Gradient */
+    .bg-mesh {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background:
+        radial-gradient(circle at 15% 50%, rgba(0, 102, 204, 0.08), transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(255, 45, 85, 0.05), transparent 25%);
+      filter: blur(40px);
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0 22px;
+      width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 max(22px, env(safe-area-inset-left));
+      backdrop-filter: saturate(180%) blur(20px);
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--card-border);
+      z-index: 100;
+    }
+
+    .brand {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-primary);
+      text-decoration: none;
+      opacity: 0.9;
+      transition: opacity 0.2s;
+    }
+
+    .brand:hover {
+      opacity: 1;
+    }
+
+    .nav-link {
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover {
+      color: var(--accent-color);
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 60px;
+      animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .hero h1 {
+      font-size: 56px;
+      line-height: 1.07143;
+      font-weight: 700;
+      letter-spacing: -0.005em;
+      margin: 0 0 12px;
+      background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: 24px;
+      line-height: 1.33341;
+      font-weight: 400;
+      color: var(--text-secondary);
+      margin: 0 auto;
+      max-width: 600px;
+    }
+
     .card {
-      margin-top: 24px; padding: 24px; border-radius: 16px;
-      backdrop-filter: saturate(180%) blur(12px);
-      background: rgba(255, 255, 255, 0.65);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+      background: var(--card-bg);
+      backdrop-filter: saturate(180%) blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 40px;
+      width: 100%;
+      max-width: 560px;
+      box-shadow: var(--shadow-md);
+      animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-    .title { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
-    .hero-title { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 8px; }
-    .hero-sub { color: #6e6e73; margin: 0 0 10px; }
-    .subtitle { margin: 0 0 24px; color: #6e6e73; }
-    .upload { border: 2px dashed #d2d2d7; border-radius: 14px; padding: 14px; text-align: center; transition: border-color .2s ease; max-width: 420px; margin: 0 auto; }
-    .upload.drag { border-color: #007aff; }
-    .file-info { margin-top: 8px; color: #1d1d1f; }
-    .actions { margin-top: 20px; display: flex; gap: 12px; align-items: center; }
-    button.primary { background: #007aff; color: #fff; border: none; border-radius: 12px; padding: 10px 16px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 20px rgba(0,122,255,0.25); }
-    button.secondary { background: #f5f5f7; color: #1d1d1f; border: none; border-radius: 12px; padding: 10px 16px; cursor: pointer; }
-    .preview-card { display: none; margin-top: 16px; padding: 14px 16px; border-radius: 14px; background: #f5f5f7; color: #1d1d1f; max-width: 520px; }
-    .pill-link { display: inline-block; background: #fff; border-radius: 999px; padding: 8px 12px; color: #007aff; text-decoration: none; font-weight: 600; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
-    .status { margin-top: 12px; color: #6e6e73; }
-    .footer { margin-top: 32px; color: #86868b; font-size: 13px; }
-    a.link { color: #007aff; text-decoration: none; }
+
+    .upload-area {
+      border: 2px dashed var(--card-border);
+      border-radius: 16px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .upload-area:hover,
+    .upload-area.drag-over {
+      border-color: var(--accent-color);
+      background: rgba(0, 102, 204, 0.03);
+      transform: scale(1.01);
+    }
+
+    .upload-icon {
+      font-size: 48px;
+      color: var(--accent-color);
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .upload-text {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .upload-sub {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .actions {
+      margin-top: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 24px;
+      border-radius: 980px;
+      font-size: 17px;
+      line-height: 1.17648;
+      font-weight: 400;
+      letter-spacing: -0.022em;
+      min-width: 160px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--accent-color);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: scale(1.02);
+      box-shadow: 0 6px 16px rgba(0, 102, 204, 0.4);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: rgba(118, 118, 128, 0.12);
+      color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(118, 118, 128, 0.2);
+    }
+
+    .status-area {
+      margin-top: 24px;
+      min-height: 24px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(0, 0, 0, 0.1);
+      border-top-color: var(--text-secondary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes fadeUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    footer {
+      padding: 40px 0;
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    /* Success State */
+    .success-card {
+      display: none;
+      background: rgba(52, 199, 89, 0.1);
+      border: 1px solid rgba(52, 199, 89, 0.2);
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 24px;
+      color: #007d35;
+      font-weight: 500;
+      animation: fadeUp 0.4s ease forwards;
+    }
   </style>
 </head>
-<body>
-  <div class="container">
-    <header>
-      <div class="brand">md2slide</div>
-      <nav><a class="link" href="/slidev" target="_blank">查看 Slidev 预览</a></nav>
-    </header>
 
-    <section class="card" style="margin-top:20px">
-      <h1 class="hero-title">✨ md2slide</h1>
-      <p class="hero-sub">使用 Gemini 大模型 + Slidev，将 Markdown 一键转换为美观、可演示的幻灯片。</p>
-      <p class="hero-sub">支持上传 .md 或包含图片资源的 .zip，自动处理图片路径与预览。</p>
+<body>
+  <div class="bg-mesh"></div>
+
+  <header>
+    <a href="/" class="brand">md2slide</a>
+    <a href="/slidev" target="_blank" class="nav-link">预览 Slidev ›</a>
+  </header>
+
+  <div class="container">
+    <section class="hero">
+      <h1>Markdown to Slides.</h1>
+      <p>Effortlessly convert your notes into stunning presentations.</p>
     </section>
 
-    <section class="card">
-      <h1 class="title">📄 上传 Markdown 或压缩包</h1>
-      <p class="subtitle">支持 .md 或 .zip。如果带图片，建议上传 zip（包含 md 与图片资源），我们会自动处理引用并放到公共资源目录。</p>
-
-      <div id="drop" class="upload">
-        <p>拖拽文件到此，或选择文件</p>
-        <input id="file" type="file" accept=".md,.zip" />
-        <div id="fileinfo" class="file-info"></div>
+    <main class="card">
+      <div id="dropZone" class="upload-area">
+        <span class="upload-icon"></span>
+        <div class="upload-text">Drop your Markdown or Zip here</div>
+        <div class="upload-sub">or click to browse</div>
+        <input id="fileInput" type="file" class="file-input" accept=".md,.zip" />
       </div>
+
+      <div id="fileInfo" style="margin-top: 16px; text-align: center; font-weight: 500; display: none;"></div>
 
       <div class="actions">
-        <button id="btnUpload" class="primary">上传</button>
-        <button id="btnConvert" class="secondary" disabled>转换为 Slidev</button>
+        <button id="btnUpload" class="btn btn-primary">Upload</button>
+        <button id="btnConvert" class="btn btn-secondary" disabled>Convert to Slidev</button>
       </div>
-      <div id="previewCard" class="preview-card">
-        <div>✅ 转换完成，点击预览：<a id="btnPreview" class="pill-link" href="/slidev" target="_blank">🚀 打开 Slidev</a></div>
-      </div>
-      <div id="status" class="status"></div>
-    </section>
 
-    <div class="footer">提示：转换成功后点击右上角或下方链接跳转到 Slidev 预览。</div>
+      <div id="statusArea" class="status-area">
+        <div class="spinner" id="spinner"></div>
+        <span id="statusText">Ready to start</span>
+      </div>
+
+      <div id="successCard" class="success-card">
+        Conversion Complete! <a href="/slidev" target="_blank" style="color: inherit; text-decoration: underline;">Open
+          Presentation</a>
+      </div>
+    </main>
+
+    <footer>
+      Designed for simplicity. Powered by Gemini.
+    </footer>
   </div>
 
   <script>
-    const fileInput = document.getElementById('file')
-    const drop = document.getElementById('drop')
-    const fileinfo = document.getElementById('fileinfo')
-    const statusEl = document.getElementById('status')
-    const btnUpload = document.getElementById('btnUpload')
-    const btnConvert = document.getElementById('btnConvert')
-    const btnPreview = document.getElementById('btnPreview')
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const btnUpload = document.getElementById('btnUpload');
+    const btnConvert = document.getElementById('btnConvert');
+    const statusText = document.getElementById('statusText');
+    const spinner = document.getElementById('spinner');
+    const successCard = document.getElementById('successCard');
 
-    let uploaded = null
+    let uploadedData = null;
+
+    // Drag & Drop
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    ['dragenter', 'dragover'].forEach(e => {
+      dropZone.addEventListener(e, (ev) => {
+        ev.preventDefault();
+        dropZone.classList.add('drag-over');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(e => {
+      dropZone.addEventListener(e, (ev) => {
+        ev.preventDefault();
+        dropZone.classList.remove('drag-over');
+      });
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      const files = e.dataTransfer.files;
+      if (files.length) handleFile(files[0]);
+    });
 
     fileInput.addEventListener('change', () => {
-      const f = fileInput.files[0]
-      fileinfo.textContent = f ? `选中文件：${f.name}` : ''
-    })
-    ;['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag') }))
-    ;['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('drag') }))
-    drop.addEventListener('drop', e => { const dt = e.dataTransfer; if (dt && dt.files && dt.files[0]) { fileInput.files = dt.files; fileinfo.textContent = `选中文件：${dt.files[0].name}` } })
+      if (fileInput.files.length) handleFile(fileInput.files[0]);
+    });
 
+    function handleFile(file) {
+      fileInput.files = createFileList(file); // Sync input
+      fileInfo.textContent = file.name;
+      fileInfo.style.display = 'block';
+      statusText.textContent = 'File selected';
+      successCard.style.display = 'none';
+      btnConvert.disabled = true;
+      uploadedData = null;
+    }
+
+    // Helper to sync FileList (since it's read-only)
+    function createFileList(file) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      return dt.files;
+    }
+
+    function setLoading(isLoading, text) {
+      statusText.textContent = text;
+      spinner.style.display = isLoading ? 'block' : 'none';
+      btnUpload.disabled = isLoading;
+      btnConvert.disabled = isLoading;
+    }
+
+    // Upload
     btnUpload.addEventListener('click', async () => {
-      const f = fileInput.files[0]
-      if (!f) { statusEl.textContent = '请先选择文件'; return }
-      statusEl.textContent = '上传中…'
-      const fd = new FormData()
-      fd.append('file', f)
-      const res = await fetch('/upload', { method: 'POST', body: fd })
-      const data = await res.json()
-      if (data.ok) {
-        uploaded = data
-        statusEl.textContent = '上传成功，可点击转换'
-        btnConvert.disabled = false
-      } else {
-        statusEl.textContent = '上传失败：' + (data.error || '未知错误')
+      if (!fileInput.files.length) {
+        statusText.textContent = 'Please select a file first';
+        return;
       }
-    })
 
-    btnConvert.addEventListener('click', async () => {
-      if (!uploaded || !uploaded.md_path) { statusEl.textContent = '请先上传文件'; return }
-      statusEl.textContent = '转换中…'
-      const fd = new FormData()
-      fd.append('md_path', uploaded.md_path)
-      const res = await fetch('/api/convert', { method: 'POST', body: fd })
-      const data = await res.json()
-      if (data.ok) {
-        statusEl.textContent = '转换成功'
-        document.getElementById('previewCard').style.display = 'block'
-      } else {
-        statusEl.textContent = '转换失败：' + (data.error || '未知错误')
+      setLoading(true, 'Uploading...');
+
+      const fd = new FormData();
+      fd.append('file', fileInput.files[0]);
+
+      try {
+        const res = await fetch('/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (data.ok) {
+          uploadedData = data;
+          setLoading(false, 'Upload successful');
+          btnConvert.disabled = false;
+        } else {
+          setLoading(false, 'Upload failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch (e) {
+        setLoading(false, 'Network error');
       }
-    })
+    });
+
+    // Convert
+    btnConvert.addEventListener('click', async () => {
+      if (!uploadedData) return;
+
+      setLoading(true, 'Converting with Gemini...');
+      successCard.style.display = 'none';
+
+      const fd = new FormData();
+      fd.append('md_path', uploadedData.md_path);
+
+      try {
+        const res = await fetch('/api/convert', { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (data.ok) {
+          setLoading(false, 'Done');
+          successCard.style.display = 'block';
+        } else {
+          setLoading(false, 'Conversion failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch (e) {
+        setLoading(false, 'Network error');
+      }
+    });
   </script>
 </body>
+
 </html>

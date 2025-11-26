@@ -74,18 +74,29 @@ def generate_slides_with_gemini(md: str) -> str:
         raise RuntimeError('GOOGLE_API_KEY 未设置')
     from google import genai
     client = genai.Client(api_key=api_key)
-    model = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
+    model = os.environ.get('GEMINI_MODEL', 'gemini-2.5-pro')
     prompt = (
-        '你是一个 Slidev 幻灯片生成器。请将输入的 Markdown 转换为适合 Slidev 的 slides.md，'
-        '使用 --- 分隔页面，并在每页前添加简洁的 frontmatter（如 title、transition）。'
-        '不要输出解释，且不要用 ``` 包裹整段内容，只输出纯 slides.md。'
-        '布局与内容密度要求：\n'
-        '1) 封面页：仅标题与一句话概述，可使用 transition: slide-left。\n'
-        '2) 普通页面：每页不超过 3–6 条要点或 1 段说明 + 1 个代码块；过长代码分成多页，每页最多 12 行。\n'
-        '3) 图片页面：保持图片链接不变，配合不超过 3 条说明；图片可单独成页。\n'
-        '4) 标题简短，避免多级标题堆叠。\n'
-        '路径保持：严格保留原 Markdown 中的图片链接路径，不要更改、简化或移除任何目录段（尤其是上层目录名）。\n'
-        '示例：原文中的 ![图](/uploads/<id>/<dir>/c.png) 必须保持为 ![图](/uploads/<id>/<dir>/c.png)。\n\n' + md
+        '你是 Slidev 幻灯片构建专家。请把输入的 Markdown 转成高质量的 Slidev slides.md。\n'
+        '保持原语言，不要翻译。\n\n'
+        '输出要求：\n'
+        '1. 仅输出纯 slides.md 内容，使用 `---` 分隔页面；不要添加解释或代码围栏。\n'
+        '2. 保留所有图片的原始路径（如 `/uploads/...`），不要改动路径或文件名；可以只添加样式类。\n\n'
+        '结构与分页：\n'
+        '1. 首个 `#` 标题生成封面页，使用 `layout: cover`，副标题从第二级标题或首段总结生成。\n'
+        '2. 一级标题开始新页面；二级标题根据内容密度决定是否新页；单页要点不超过 5 条；代码块尽量单独占页；长列表或长段落需要拆分为多页并用进度提示。\n'
+        '3. 列表使用 `<v-clicks>` 分步呈现。\n\n'
+        '版式与风格：\n'
+        '1. Frontmatter：`theme: seriph`，`highlighter: shiki`，`lineNumbers: false`，`drawings: { present: true }`，`transition: slide-left`，`css: unocss`；如主题不可用则使用默认主题。\n'
+        '2. **严格的格式正确性**：必须确保生成的 Markdown 语法完全正确，避免未闭合的标签或错误的缩进。不要使用复杂的 HTML 结构，尽量使用纯 Markdown 语法。\n'
+        '3. 内容页优先使用 `layout: two-cols`、`layout: image-right`、`layout: center`、`layout: default`。\n'
+        '4. 图片样式建议：`class="rounded-xl shadow-lg h-60 object-cover"`；如果尺寸不合适，可用 `h-72` 或 `w-full`。\n'
+        '5. 若使用图标，优先 `<carbon-... />`；不确定时不要使用未知图标名称。\n'
+        '6. 关键字可用简单的强调（如 `**重点**` 或 `<span class="text-red-500">重点</span>`），避免过度装饰，尽量少用 HTML。\n\n'
+        '代码与表格：\n'
+        '1. 代码块保留语言标注，使用 `shiki` 高亮；可加 `{all|1-3|...}` 分步展示但不要过度。\n'
+        '2. 遇到过长的代码你可以选择不展示，或者分析原本markdown文档里提及的有关代码的内容，只展示关键代码，关键几行即可\n'
+        '3. 表格按原意保留或优化为两列布局。\n\n'
+        '现在请基于以下 Markdown 生成 slides.md：\n' + md
     )
     resp = client.models.generate_content(model=model, contents=prompt)
     text = getattr(resp, 'text', '')
